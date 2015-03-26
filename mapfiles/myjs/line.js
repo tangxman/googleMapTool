@@ -1,6 +1,5 @@
 var poly;
 var anotherCircle;
-var polyOptions;
 
 var line;
 
@@ -15,6 +14,14 @@ var start;
 var alreadyDistance = 0;
 
 var endState = new Boolean(true);
+
+var polyOptions = {       
+    strokeColor: "#FF0000",
+    strokeOpacity: 1.0,
+    strokeWeight: 2,
+    editable: false,
+    draggable: false                
+};
 
 var createDiv = function(point,direc,type){
 	var marker = new google.maps.Marker({
@@ -211,13 +218,7 @@ Number.prototype.toBrng = function () {
 
 function Line(id){
 	overTrack(0);
-	var polyOptions = {       
-        strokeColor: "#FF0000",
-        strokeOpacity: 1.0,
-        strokeWeight: 2                
-    };
     var movepositionmarker,movedistancemarker;
-    
     var markerarray = [];
     var labelarray = [];          
     poly = new google.maps.Polyline(polyOptions);
@@ -292,13 +293,15 @@ function createLine()
 
 var updateLine = function(x,y,id){
 	var capline = getLine(id,radarCapLineArray);
-	if(capline){
-		var path = capline.getPath();
-		var point = new google.maps.LatLng(x,y);
-		path.push(point);
-	}else{
-		
+	if(!capline){
+		capline = new google.maps.Polyline(polyOptions);
+		capline.id = id;
+		capline.setMap(map);
+		radarCapLineArray.push(capline);
 	}
+	var path = capline.getPath();
+	var point = new google.maps.LatLng(x,y);
+	path.push(point);
 };
 
 
@@ -322,14 +325,11 @@ function createCircle(){
 function circleArc(id){
 	var centerPoint,startPoint,endPoint;
 	var startBearing,endBearing,radius;
-	var arcCircleOptions = drawingManager.get('polylineOptions');
-	arcCircleOptions.editable = false;
-	arcCircleOptions.strokeColor = '#1E90FF';
 	overTrack(0);
 	var movepositionmarker,movedistancemarker;
 	var markerarray = [];
     var labelarray = [];
-	poly = new google.maps.Polyline(arcCircleOptions);
+	poly = new google.maps.Polyline(polyOptions);
 	poly.setMap(map);
 	poly.markerarray = markerarray;
     poly.labelarray = labelarray;
@@ -387,11 +387,12 @@ function circleArc(id){
     	var arcPts = drawArc(centerPoint,startBearing, endBearing-startBearing, radius);
 		poly.setPath(arcPts); 
 
-		var anotherOptions = drawingManager.get('polylineOptions');
-		anotherOptions.editable = false;
+		var anotherOptions = polyOptions;
+		var orincolor = polyOptions.strokeColor;
 		anotherOptions.strokeColor = '#32CD32';
 		anotherCircle = new google.maps.Polyline(anotherOptions);
-		anotherCircle.setMap(map);	   	
+		anotherCircle.setMap(map);
+		polyOptions.strokeColor = orincolor;	   	
 
 		var anotherPath = drawArc(centerPoint,endBearing, startBearing-endBearing, radius);
 		anotherCircle.setPath(anotherPath);

@@ -12,6 +12,8 @@
     <script type="text/javascript" src="mapfiles/myjs/line.js"></script>
     <script type="text/javascript" src="mapfiles/myjs/dragzoomcontrol.js"></script>
     <script type="text/javascript" src="mapfiles/myjs/label.js"></script>
+    <script type="text/javascript" src="mapfiles/myjs/rightclickmenu.js"></script>
+    <link rel="stylesheet" href="mapfiles/myjs/rightclickmenu.css" type="text/css" />
     <style type="text/css">
     		
             #color-palette {
@@ -77,126 +79,6 @@
                 draggable: true
             });             
 
-            var polyOptions = {
-                    strokeWeight: 0,
-                    fillOpacity: 0.45,
-                    editable: true,
-                    draggable: true                    
-            };
-            
-            drawingManager = new google.maps.drawing.DrawingManager({
-                drawingControl:true,
-                markerOptions: {
-                    draggable: true,
-                    icon:new google.maps.MarkerImage('images/plane_90.png')
-                },
-                polylineOptions: {
-                    editable: true,
-                    draggable: true
-                    //geodesic:true
-                },
-                rectangleOptions: polyOptions,
-                circleOptions: {
-                    editable: true,
-                    draggable: true,
-                    fillOpacity:0
-                },
-                polygonOptions: polyOptions,
-                map: map
-            });
-
-            google.maps.event.addListener(drawingManager, 'overlaycomplete', function (e) {
-                drawingManager.setDrawingMode(null);
-                if (e.type == google.maps.drawing.OverlayType.POLYLINE) {
-                    var newShape = e.overlay;
-                    newShape.type = e.type;
-                    google.maps.event.addListener(newShape, 'click', function (e) {
-                        if (e.vertex !== undefined) {
-                            var path = newShape.getPath();
-                            path.removeAt(e.vertex);
-                            if (path.length < 2) {
-                                newShape.setMap(null);
-                            }
-                        }
-                        setSelection(newShape);
-                    });
-                    var linePath = newShape.getPath();
-                    if(trackStartPoint){
-                    	linePath.insertAt(0,trackStartPoint);
-                    }                   
-                    newShape.id = line.id;
-                    newShape.dramaId = line.dramaId;
-                    newShape.objType = objTypes.LINE;                    					
-                    line.flightPath = newShape;
-                    drama.push(line);
-                    var len = linePath.getLength();
-                    trackStartPoint = linePath.getAt(len-1);
-                    setSelection(newShape);
-                    createLine();
-                }else if(e.type==google.maps.drawing.OverlayType.POLYGON){
-                    var newShape = e.overlay;
-                    newShape.type = e.type;
-                    google.maps.event.addListener(newShape, 'click', function (e) {
-                        if (e.vertex !== undefined) {
-                            var path = newShape.getPaths().getAt(e.path);
-                            path.removeAt(e.vertex);
-                            if (path.length < 3) {
-                                newShape.setMap(null);
-                            }                           
-                        }
-                        setSelection(newShape);
-                    });
-                    setSelection(newShape);
-                }else if(e.type == google.maps.drawing.OverlayType.CIRCLE){
-                    var newShape = e.overlay;
-                    newShape.type = e.type;
-                    google.maps.event.addListener(newShape, 'click', function (e) {
-                        setSelection(newShape);
-                    });
-                    setSelection(newShape);
-                    if(drawRadar){
-                        google.maps.event.addListener(newShape, 'drag', function (e) {
-                            newShape.marker.setPosition(newShape.getCenter());
-                        });                        
-                        var image = "images/radar.png";
-                        var circleCenter = newShape.getCenter();
-                        var marker = new google.maps.Marker({
-                             position: circleCenter,
-                             icon: image,
-                             map:map
-                        });
-                        radar.marker = marker;
-                        newShape.marker = marker;
-                        newShape.id = radar.id;
-                        newShape.objType = objTypes.RADAR;
-                        radar.radarCircle = newShape;
-                        radarArray.push(radar);
-                        createRadar();
-                    }else{
-                        createCircle();
-                    }
-                    
-                }else if(e.type == google.maps.drawing.OverlayType.MARKER){
-                	var newShape = e.overlay;
-                    newShape.type = e.type;
-                	google.maps.event.addListener(newShape, 'click', function (e) {
-                        setSelection(newShape);
-                        
-                    });
-                    plane.object = newShape;
-                    objectArray.push(plane);
-                    setSelection(newShape);
-                }else if(e.type == google.maps.drawing.OverlayType.RECTANGLE){
-                    var newShape = e.overlay;
-                    setSelection(newShape);
-                    google.maps.event.addListener(newShape, 'click', function (e) {
-                        setSelection(newShape);
-                        
-                    });
-                    createRectangle();
-                }
-            });
-
 			map.enableKeyDragZoom({
 				boxStyle: {
 				  opacity: 0.7
@@ -207,12 +89,7 @@
 				}
 			});
 
-			map.enableChangeCursor();
-
-            //google.maps.event.addListener(drawingManager, 'drawingmode_changed', clearSelection);
-            //google.maps.event.addListener(map, 'click', clearSelection);      
-
-            buildColorPalette();
+			map.enableRightClickMenu();
 
         }
         
