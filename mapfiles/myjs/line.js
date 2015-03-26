@@ -23,7 +23,7 @@ var polyOptions = {
     draggable: false                
 };
 
-var createDiv = function(point,direc,type){
+var createDiv = function(combineobject,point,direc,type){
 	var marker = new google.maps.Marker({
 		position: point,
 		map: map,
@@ -40,8 +40,8 @@ var createDiv = function(point,direc,type){
 	}else if(type=="position"){
 		label.bindTo('text', marker, 'position');
 	}
-	poly.markerarray.push(marker);
-	poly.labelarray.push(label);
+	combineobject.markerarray.push(marker);
+	combineobject.labelarray.push(label);
 	marker.label = label;
 	return marker;
 };
@@ -149,7 +149,8 @@ var drawArc = function(center, initialBearing, deltaBearing, radius) {
 
 	//radius = radius*111*1000;
 
-	// find the raidus in lat/lon 
+	//radius = radius/1609;
+
 	var rlat = (radius / 6378137.0) * r2d; 
 	var rlng = rlat / Math.cos(center.lat() * d2r); 
 
@@ -196,8 +197,7 @@ google.maps.LatLng.prototype.Bearing = function(otherLatLng) {
 };
 
 google.maps.LatLng.prototype.distanceFrom = function(otherLatLng) {	
-	  var distance = google.maps.geometry.spherical.computeDistanceBetween(this, otherLatLng) / 1609;
-
+	  var distance = google.maps.geometry.spherical.computeDistanceBetween(this, otherLatLng);
 	  return distance;
 };
 
@@ -237,12 +237,12 @@ function Line(id){
 	        start = event.latLng;
 	        path.push(start);
 	        endState = false;
-	        createDiv(start,"down","position");
-	        createDiv(start,"top","distance").setTitle("起点");
+	        createDiv(poly,start,"down","position");
+	        createDiv(poly,start,"top","distance").setTitle("起点");
 	    });
     }
-    movepositionmarker = createDiv(null,"down","position");
-    movedistancemarker = createDiv(null,"top","distance");
+    movepositionmarker = createDiv(poly,null,"down","position");
+    movedistancemarker = createDiv(poly,null,"top","distance");
     google.maps.event.addListener(map,'mousemove',function(event){
     	var path = poly.getPath();
 		path.pop(); 
@@ -250,7 +250,7 @@ function Line(id){
 		movepositionmarker.setPosition(event.latLng);
 		if(start){
 			movedistancemarker.setPosition(event.latLng);
-			movedistancemarker.setTitle((alreadyDistance+start.distanceFrom(event.latLng)).toFixed(2)+"公里");
+			movedistancemarker.setTitle(((alreadyDistance+start.distanceFrom(event.latLng))/1000).toFixed(2)+"公里");
 		}		
     });
     google.maps.event.addListener(poly, 'click', function(event){
@@ -259,8 +259,8 @@ function Line(id){
 		path.push(end);
 		alreadyDistance += start.distanceFrom(event.latLng);			
 		start = end;
-		createDiv(end,"down","position");
-		createDiv(end,"top","distance").setTitle(alreadyDistance.toFixed(2)+"公里");
+		createDiv(poly,end,"down","position");
+		createDiv(poly,end,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");
 	});
 
 	google.maps.event.addListenerOnce(poly, 'dblclick', function(event){
@@ -273,8 +273,8 @@ function Line(id){
 		google.maps.event.clearListeners(map,'mousemove');
 		alreadyDistance += start.distanceFrom(event.latLng);
 		start = end;
-		createDiv(end,"down","position");
-		createDiv(end,"top","distance").setTitle(alreadyDistance.toFixed(2)+"公里");
+		createDiv(poly,end,"down","position");
+		createDiv(poly,end,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");
 		movepositionmarker.label.setMap(null);
 		movedistancemarker.label.setMap(null);
 		movepositionmarker = null;
@@ -288,7 +288,7 @@ function Line(id){
 
 function createLine()
 {
-	line = new Line(returnLineId());
+	line = new Line(GenerateId());
 }
 
 var updateLine = function(x,y,id){
@@ -318,7 +318,7 @@ function Circle(id){
 function createCircle(){
 	drawRadar = 0;
 	//clearSelection();
-	var circle = new Circle(returnLineId());
+	var circle = new Circle(GenerateId());
 
 }
 
@@ -335,46 +335,46 @@ function circleArc(id){
     poly.labelarray = labelarray;
 	if(trackStartPoint){
 		startPoint = trackStartPoint;
-		movepositionmarker = createDiv(null,"down","position");
-		movedistancemarker = createDiv(null,"top","distance");
+		movepositionmarker = createDiv(poly,null,"down","position");
+		movedistancemarker = createDiv(poly,null,"top","distance");
 		google.maps.event.addListener(map,'mousemove',function(event){
     		centerPoint = event.latLng;
     		startBearing = centerPoint.Bearing(startPoint);
-    		radius = centerPoint.distanceFrom(startPoint)*1600;
+    		radius = centerPoint.distanceFrom(startPoint);
 	    	var arcPts = drawArc(centerPoint,startBearing, 360, radius);
 	   	 	poly.setPath(arcPts);
 	   	 	movepositionmarker.setPosition(centerPoint);
 	   	 	movedistancemarker.setPosition(centerPoint);
-	   	 	movedistancemarker.setTitle(startPoint.distanceFrom(centerPoint).toFixed(2)+"公里");
+	   	 	movedistancemarker.setTitle((radius/1000).toFixed(2)+"公里");
     	});
 
     	google.maps.event.addListenerOnce(map,'click',function(event){	
     		google.maps.event.clearListeners(map,'mousemove');
-    		createDiv(event.latLng,"down","position");
-    		createDiv(event.latLng,"top","distance").setTitle(startPoint.distanceFrom(centerPoint).toFixed(2)+"公里");
+    		createDiv(poly,event.latLng,"down","position");
+    		createDiv(poly,event.latLng,"top","distance").setTitle((radius/1000).toFixed(2)+"公里");
     	});
     	endState = false;
 	}else{
 		google.maps.event.addListenerOnce(map,'click',function(event){
     		startPoint = event.latLng;
-    		createDiv(startPoint,"down","position");
-    		createDiv(startPoint,"top","distance").setTitle("起点");
-    		movepositionmarker = createDiv(null,"down","position");
-			movedistancemarker = createDiv(null,"top","distance");
+    		createDiv(poly,startPoint,"down","position");
+    		createDiv(poly,startPoint,"top","distance").setTitle("起点");
+    		movepositionmarker = createDiv(poly,null,"down","position");
+			movedistancemarker = createDiv(poly,null,"top","distance");
     		google.maps.event.addListener(map,'mousemove',function(event){
 	    		centerPoint = event.latLng;
 	    		startBearing = centerPoint.Bearing(startPoint);
-	    		radius = centerPoint.distanceFrom(startPoint)*1600;
+	    		radius = centerPoint.distanceFrom(startPoint);
 		    	var arcPts = drawArc(centerPoint,startBearing, 360, radius);
 		   	 	poly.setPath(arcPts);
 		   	 	movepositionmarker.setPosition(centerPoint);
 		   	 	movedistancemarker.setPosition(centerPoint);
-	   	 		movedistancemarker.setTitle(startPoint.distanceFrom(centerPoint).toFixed(2)+"公里");
+	   	 		movedistancemarker.setTitle((radius/1000).toFixed(2)+"公里");
 	    	});
 	    	google.maps.event.addListenerOnce(map,'click',function(event){
 	    		google.maps.event.clearListeners(map,'mousemove');
-	    		createDiv(event.latLng,"down","position");
-    			createDiv(event.latLng,"top","distance").setTitle(startPoint.distanceFrom(event.latLng).toFixed(2)+"公里");
+	    		createDiv(poly,event.latLng,"down","position");
+    			createDiv(poly,event.latLng,"top","distance").setTitle((radius/1000).toFixed(2)+"公里");
 	    	});
     	});
     	endState = false;
@@ -397,7 +397,7 @@ function circleArc(id){
 		var anotherPath = drawArc(centerPoint,endBearing, startBearing-endBearing, radius);
 		anotherCircle.setPath(anotherPath);
 
-		createDiv(endPoint,"down","position");
+		createDiv(poly,endPoint,"down","position");
 		
 
 		google.maps.event.addListenerOnce(map, 'click', function(event){
@@ -420,12 +420,12 @@ function circleArc(id){
 				var pathArray = poly.getPath().getArray();
 				trackStartPoint = pathArray[0];
 				alreadyDistance +=(360-endBearing).toRad()*radius;
-				createDiv(endPoint,"top","distance").setTitle(alreadyDistance.toFixed(2)+"公里");
+				createDiv(poly,endPoint,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");
 			}else{
 				var pathArray = poly.getPath().getArray();
 				trackStartPoint = pathArray[pathArray.length-1];
 				alreadyDistance +=endBearing.toRad()*radius;
-				createDiv(endPoint,"top","distance").setTitle(alreadyDistance.toFixed(2)+"公里");				
+				createDiv(poly,endPoint,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");				
 			}
 			anotherCircle.setMap(null);
 			anotherCircle = null;			
@@ -446,7 +446,7 @@ function circleArc(id){
 function createCirArc(){
 	//clearDrawingMode();
 	//clearSelection();
-	line = new circleArc(returnLineId());
+	line = new circleArc(GenerateId());
 }
 
 var addLinesToQt = function(){

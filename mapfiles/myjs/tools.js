@@ -69,7 +69,7 @@ var objTypes={
 };
 
 var dramaId = 0;
-var lineId = 0;
+var genId = 0;
 var divId = 0;
 
 var copy;
@@ -82,8 +82,8 @@ var newDramaId = function(){
 	//dramaId++;
 };
 
-var  returnLineId = function(){
-	return ++lineId;
+var  GenerateId = function(){
+	return ++genId;
 };
 
 function clearSelection () {

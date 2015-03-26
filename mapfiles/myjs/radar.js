@@ -2,105 +2,108 @@ var radarArray = new Array();
 
 var radar;
 
-var drawRadar = 0;
+var circleOptions = {
+    fillColor: '#32CD32',
+    fillOpacity: 0,
+    strokeWeight: 3,
+    strokeColor:'#32CD32',
+    clickable: false
+};
 
-function getRadar(id){
-    for(i in radarArray){
+var getRadar = function(id){
+    for(var i=0;i<radarArray.length;i++){
         if(radarArray[i].id == id){
-            return i;
+            return radarArray[i];
         }
     }
-    return -1;
-}
+    return null;
+};
 
 function Radar(id,type_id){	
 	if(id!=-1){
-		this.id = id;
+        var image;
+        if(type_id==0){
+            image = "images/radar.png";
+        }else if(type_id==1){
+            image = "images/radar.png";
+        }
+        this.id = id;
+        this.markerarray = new Array();
+        this.labelarray = new Array();
 
-		var image;
-		if(type_id==0){
-	        image = "images/radar.png";
-	    }else if(type_id==1){
-	        image = "images/radar.png";
-	    }
+        var self = this;
 
-	    var mode = google.maps.drawing.OverlayType.CIRCLE;
-		drawingManager.setDrawingMode(mode);
-	}
-	
+        google.maps.event.addListenerOnce(map,'click',function(event){
+            var center = event.latLng;
+            var marker = new google.maps.Marker({
+                position: center,
+                icon: image,
+                map:map,
+                draggable:true
+            });
+            self.marker = marker;
 
-	// google.maps.event.addListenerOnce(map, 'click', function(e){
- //        var pos = e.latLng;
- //        var marker = new google.maps.Marker({
- //             position: pos,
- //             icon: image,
- //             map:map
- //        });
- //        radar.marker = marker;
-        
-	// });
+            createDiv(self,center,"down","position");
 
-	
-    // this.id = id;
-    // this.type_id = type_id;
-    // this.x = x;
-    // this.y = y;
-    // this.radius = radius;
-    // var myLatLng = new google.maps.LatLng(y, x);
-    // var image;
-    // if(type_id==0){
-    //     image = "images/radar.png";
-    // }else if(type_id==1){
-    //     image = "images/radar.png";
-    // }
-    // var marker = new google.maps.Marker({
-    //     position: myLatLng,
-    //     icon: image
-    // });
-    // marker.setMap(map); 
-    // this.marker = marker;
-    
-    // var radarCircle = new google.maps.Circle({
-    //     center:myLatLng,
-    //     radius:radius*111*1000,
-    //     strokeColor:"#0000FF",
-    //     strokeOpacity:0.8,
-    //     strokeWeight:2,
-    //     fillColor:"#000000",
-    //     fillOpacity:0
-    // });
-    // radarCircle.setMap(map);
-    // this.radarCircle = radarCircle;
-    // var sectorPath = new drawArc(myLatLng,0,3.14/6,radius);
-    // sectorPath.push(myLatLng);
-    // this.sectorPath = sectorPath;
+            var circle = new google.maps.Circle(circleOptions);
+            circle.setMap(map);
+            circle.bindTo('center', marker, 'position');
 
-    // var sector = new google.maps.Polygon({
-    //     paths: [sectorPath],
-    //     strokeColor: "#00FF00",
-    //     strokeOpacity: 0.5,
-    //     strokeWeight: 2,
-    //     fillColor: "#FF0000",
-    //     fillOpacity: 0.35,
-    //     map: map
-    // });
+            var movedistancemarker = createDiv(self,null,"top","distance");
+            var movepositionmarker = createDiv(self,null,"down","position");
+            google.maps.event.addListener(map,'mousemove',function(event){                
+                circle.setRadius(center.distanceFrom(event.latLng));
+                movepositionmarker.setPosition(event.latLng);
+                movedistancemarker.setPosition(event.latLng);
+                movedistancemarker.setTitle((center.distanceFrom(event.latLng)/1000).toFixed(2)+"公里");
 
-    // this.sector = sector;
-    // radarArray.push(this);
+            });
 
-    //startScan(this,myLatLng);
-    
-//    clearInterval(handle);
+            google.maps.event.addListenerOnce(map,'click',function(event){
+                google.maps.event.clearListeners(map,'mousemove');
+                self.circle = circle;
+                radarArray.push(self);
+                createDiv(self,end,"down","position");
+                createDiv(self,end,"top","distance").setTitle((center.distanceFrom(event.latLng)/1000).toFixed(2)+"公里");
+                movepositionmarker.label.setMap(null);
+                movedistancemarker.label.setMap(null);
+                movepositionmarker = null;
+                movedistancemarker = null;
+            });
+        });      
+	}	
 }
 
-// function createRadar(id, type_id,  x, y, radius){
-//     var radar = new Radar(id, type_id,  x, y, radius);
-// }
-
-function createRadar()
+function createRadar(type_id)
 {
-	drawRadar =1;
-	radar = new Radar(returnLineId(),0);
+	radar = new Radar(GenerateId(),type_id);
+}
+
+function updateRadar(id,radius,type_id,x,y){
+    radar = getRadar(id);
+    var center = new google.maps.LatLng(x, y);
+    var image;
+    if(type_id==0){
+        image = "images/radar.png";
+    }else if(type_id==1){
+        image = "images/radar.png";
+    }
+    if(!radar){
+        radar = new Radar(-1,0);
+        radar.id = GenerateId();       
+        var marker = new google.maps.Marker({
+            position: center,
+            icon: image,
+            map:map
+        });
+        radar.marker = marker;
+        radar.circle = new google.maps.Circle(circleOptions);
+        radar.circle.setMap(map);
+        radarArray.push(radar);
+    }
+    radar.marker.setOptions({icon:image});
+    radar.circle.setCenter(center);
+    radar.circle.setRadius(radius);
 }
 
 function startScan(radar,radiuPos){
