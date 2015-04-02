@@ -68,21 +68,12 @@ var objTypes={
 	RADAR:7
 };
 
-var dramaId = 0;
 var genId = 0;
 var divId = 0;
 
 var copy;
 
-var newDramaId = function(){
-	//var temp = drama.slice(0);
-	//dramaArray.push(temp);
-	drama.splice(0,drama.length);
-	trackStartPoint = null;
-	//dramaId++;
-};
-
-var  GenerateId = function(){
+var GenerateId = function(){
 	return ++genId;
 };
 
@@ -282,20 +273,18 @@ function pasteSelectedShape()
 
 function clearAll()
 {
-	if(drama){
-		for(var j=0,len2=drama.length;j<len2;j++){
-			drama[j].flightPath.setMap(null);
-			
-		}
-		drama.splice(0,drama.length);
-	}
 	if(dramaArray){
 		for(var i=0,len1=dramaArray.length;i<len1;i++){
-			var currentDrama = dramaArray[i];
+			var currentDrama = dramaArray[i].drama;
 			if(currentDrama){
 				for(var j=0,len2=currentDrama.length;j<len2;j++){
 					currentDrama[j].flightPath.setMap(null);
-					
+					for(var k=0;k<currentDrama[j].flightPath.markerarray.length;k++){
+						currentDrama[j].flightPath.markerarray[k].setMap(null);
+						currentDrama[j].flightPath.labelarray[k].setMap(null);
+					}
+					currentDrama[j].flightPath.markerarray.splice(0,currentDrama[j].flightPath.markerarray.length);
+					currentDrama[j].flightPath.labelarray.splice(0,currentDrama[j].flightPath.labelarray.length);					
 				}
 				currentDrama.splice(0,currentDrama.length);				
 			}
@@ -304,6 +293,7 @@ function clearAll()
 	}
 	clearObject();
 	clearRadar();
+	radarLineArray.splice(0,radarLineArray.length);
 }
 
 function selectObject(id){

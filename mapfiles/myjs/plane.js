@@ -12,54 +12,20 @@ function getObject(id){
 } 
 
 function addObject(id){
-    
-    var mode = google.maps.drawing.OverlayType.MARKER;
-    drawingManager.setDrawingMode(mode);
-
-    this.id = id;
-
-    
-    // this.id = id;
-    // this.type_id = type_id;
-    // this.x = x;
-    // this.y = y;
-    // var z = map.getZoom();
-    // var pos = new google.maps.LatLng(y,x);
-    // var image;
-
-    // var angle = angle*180/Math.PI;
-    // angle = angle | 0;
-    // var quot = (angle / 10)|0;
-    // var remain = angle%10;
-    // if(remain>=5){
-    //     quot = quot+1;
-    // }
-    // angle = quot*10;
-
-    // if(type_id==0){
-    //     var image = "images/plane_"+angle+".png";
-    // }else if(type_id==1){
-    //     image = "images/plane.png";
-    // }else if(type_id==2){
-    //     image = "images/plane.png";
-    // }
-
-    // var object = new google.maps.Marker({
-    //     position:pos,
-    //     icon:image,
-    //     map:map
-    // });
-
-    // this.object = object;
-
-    // var conHtml = "<p>速度："+speed+"</p><p>加速度："+acc+"</p>";
-    // var state = new google.maps.InfoWindow({
-    //     content:conHtml
-    // });
-    // google.maps.event.addListener(object, 'click', function() {
-    //       state.open(map,object);
-    // }); 
-    //objectArray.push(this);
+    if(id!=-1){
+        this.id = id;
+        var self = this;
+        objectArray.push(self);
+        
+        google.maps.event.addListenerOnce(map,'click',function(event){
+            var object = new google.maps.Marker({
+                position:event.latLng,
+                icon:"images/plane_90.png",
+                map:map
+            });
+            self.object = object;
+        });
+    } 
 }
 
 function createObject(){
@@ -76,6 +42,31 @@ function createObject(){
     }
     ++dramaId;
     dramaArray.push(temp);
+}
+
+function placeLineTarget(trackid,batch,type,type_id){
+    var track = getTrack(trackid);
+    if(track){
+        var targetArray = [];
+        var start_point = track.drama[0].flightPath.getPath().getAt(0);
+        var offset = batch/2;
+        for(var i=0;i<batch;i++){
+            plane = new addObject(-1);
+            plane.id = GenerateId();
+            plane.type = type;
+            plane.type_id = type_id;
+            plane.object = new google.maps.Marker({
+                position: new google.maps.LatLng(start_point.lat()+offset--,start_point.lng()),
+                icon:"images/plane_90.png",
+                map:map
+            });
+            objectArray.push(plane);
+            targetArray.push(plane);
+        }
+        track.batch_count = batch;
+        track.targetArray = targetArray;
+    }
+
 }
 
 function updateObject(id, type_id, x, y, acc, speed, angle){
@@ -126,5 +117,5 @@ function clearObject(){
         obj.object.setMap(null);
 
     }
-    object.splice(0,objectArray.length);
+    objectArray.splice(0,objectArray.length);
 }

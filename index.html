@@ -125,11 +125,13 @@
      	
         <div>
 
-	        <input type="button" value="drawLine" style="width:100px" onclick="dragZoomIn()" />
+	        <input type="button" value="drawLine" style="width:100px" onclick="createRadar(0)" />
 	        <input type="button" value="createLine" style="width:100px" onclick="createLine()" />
 	        <button id="delete-button" onclick="createCirArc()">createCirArc</button>
-            <button id="delete-button" onclick="testCurve()">setDragCursor</button>
-
+            <button id="delete-button" onclick="clearAll()">clearAll</button>
+            <button id="delete-button" onclick="addTracksToQt()">addTracksToQt</button>
+            <button id="delete-button" onclick="addRadarToQt()">addRadarToQt</button>
+            <button id="delete-button" onclick="updateRadarCapLine(104.312,34.587,114.312,38.587,1)">updateRadarCapLine</button>
         </div>
     </div>  
 

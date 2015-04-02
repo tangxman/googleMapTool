@@ -42,10 +42,12 @@ function Radar(id,type_id){
                 draggable:true
             });
             self.marker = marker;
+            self.center = center;
 
             createDiv(self,center,"down","position");
 
             var circle = new google.maps.Circle(circleOptions);
+            self.radarCircle = circle;
             circle.setMap(map);
             circle.bindTo('center', marker, 'position');
 
@@ -62,6 +64,8 @@ function Radar(id,type_id){
             google.maps.event.addListenerOnce(map,'click',function(event){
                 google.maps.event.clearListeners(map,'mousemove');
                 self.circle = circle;
+                var end = event.latLng;
+                self.start = end;
                 radarArray.push(self);
                 createDiv(self,end,"down","position");
                 createDiv(self,end,"top","distance").setTitle((center.distanceFrom(event.latLng)/1000).toFixed(2)+"公里");
@@ -148,25 +152,14 @@ function clearRadar(){
 	for(r in radarArray){
 		radarArray[r].marker.setMap(null);
 		radarArray[r].radarCircle.setMap(null);
-        //radarArray[r].sector.setMap(null);
+        for(var k=0;k<radarArray[r].markerarray.length;k++){
+            radarArray[r].markerarray[k].setMap(null);
+            radarArray[r].labelarray[k].setMap(null);
+        }
+        radarArray[r].markerarray.splice(0,radarArray[r].markerarray.length);
+        radarArray[r].labelarray.splice(0,radarArray[r].labelarray.length); 
 	}
 	radarArray.splice(0,radarArray.length);
-}
-
-function createRadarState(radar_id, object_id){
-
-}
-
-function updateRadarState(radar_id, object_id){
-
-}
-
-function deleteRadarState(radar_id, object_id){
-
-}
-
-function clearRadarState(id){
-
 }
 
 function addRadarToQt()
@@ -174,9 +167,7 @@ function addRadarToQt()
 	for(var i=0,len1=radarArray.length;i<len1;i++)
 	{
 		radar = radarArray[i];
-		var north = radar.radarCircle.getBounds().getNorthEast();
-		var mar = radar.marker;
-		opera_option.setRadar(north.lng(),north.lat(),mar.getPosition().lng(),mar.getPosition().lat(),radar.id);
+		track_initial.setRadar(radar.id,radar.start.lng(),radar.start.lat(),radar.center.lng(),radar.center.lat());
 	}
 }
 
