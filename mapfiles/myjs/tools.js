@@ -293,9 +293,8 @@ function clearAll()
 	}
 	clearObject();
 	clearRadar();
+	for(var i=0;i<radarLineArray.length;i++){
+		radarLineArray[i].setMap(null);
+	}
 	radarLineArray.splice(0,radarLineArray.length);
-}
-
-function selectObject(id){
-    
 }

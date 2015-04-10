@@ -19,15 +19,12 @@ var getRadar = function(id){
     return null;
 };
 
-function Radar(id,type_id){	
+function Radar(id){	
+
 	if(id!=-1){
-        var image;
-        if(type_id==0){
-            image = "images/radar.png";
-        }else if(type_id==1){
-            image = "images/radar.png";
-        }
+        var image = "images/radar.png";
         this.id = id;
+        this.type_id = -1;
         this.markerarray = new Array();
         this.labelarray = new Array();
 
@@ -42,9 +39,8 @@ function Radar(id,type_id){
                 draggable:true
             });
             self.marker = marker;
-            self.center = center;
 
-            createDiv(self,center,"down","position");
+            createDiv(self,center,"down","position").bindTo('position',marker);
 
             var circle = new google.maps.Circle(circleOptions);
             self.radarCircle = circle;
@@ -65,33 +61,31 @@ function Radar(id,type_id){
                 google.maps.event.clearListeners(map,'mousemove');
                 self.circle = circle;
                 var end = event.latLng;
-                self.start = end;
                 radarArray.push(self);
-                createDiv(self,end,"down","position");
-                createDiv(self,end,"top","distance").setTitle((center.distanceFrom(event.latLng)/1000).toFixed(2)+"公里");
+                //createDiv(self,end,"down","position");
+                //createDiv(self,end,"top","distance").setTitle((center.distanceFrom(event.latLng)/1000).toFixed(2)+"公里");
                 movepositionmarker.label.setMap(null);
                 movedistancemarker.label.setMap(null);
                 movepositionmarker = null;
                 movedistancemarker = null;
+
+                google.maps.event.addListener(marker,'dblclick',function(event){
+                    radarSettings.updateRadar(self.id,self.type_id,radar.circle.getCenter().lng(),radar.circle.getCenter().lat(),radar.circle.getRadius()/1000);
+                });
             });
         });      
 	}	
 }
 
-function createRadar(type_id)
+function createRadar()
 {
-	radar = new Radar(GenerateId(),type_id);
+	radar = new Radar(GenerateId());
 }
 
-function updateRadar(id,radius,type_id,x,y){
+function updateRadar(id,type_id,x,y,scan_type,scan_start_pos,scan_angle,radius){
     radar = getRadar(id);
-    var center = new google.maps.LatLng(x, y);
-    var image;
-    if(type_id==0){
-        image = "images/radar.png";
-    }else if(type_id==1){
-        image = "images/radar.png";
-    }
+    var center = new google.maps.LatLng(y,x);
+    var image = "images/radar.png";    
     if(!radar){
         radar = new Radar(-1,0);
         radar.id = GenerateId();       
@@ -105,9 +99,30 @@ function updateRadar(id,radius,type_id,x,y){
         radar.circle.setMap(map);
         radarArray.push(radar);
     }
-    radar.marker.setOptions({icon:image});
+    if(scan_type==1){
+        var sectorPath = new drawArc(center,scan_start_pos,scan_angle,radius*1000);
+        sectorPath.push(center);
+
+        var sector = new google.maps.Polygon({
+            paths: [sectorPath],
+            strokeColor: "#00FF00",
+            strokeOpacity: 0.5,
+            strokeWeight: 2,
+            fillColor: "#FF0000",
+            fillOpacity: 0.35,
+            map: map
+        });
+
+        radar.sector = sector;
+    }else{
+        radar.sector = null;
+    }
+    radar.type_id = type_id;
+    radar.scan_type = scan_type;
+    radar.scan_start_pos = scan_start_pos;
+    radar.scan_angle = scan_angle;
     radar.circle.setCenter(center);
-    radar.circle.setRadius(radius);
+    radar.circle.setRadius(radius*1000);
 }
 
 function startScan(radar,radiuPos){
@@ -128,11 +143,6 @@ function startScan(radar,radiuPos){
         });
         radar.sector = newSector;
     },4000/40);
-}
-
-function updateRadar(id, type_id, x, y, radius){
-	deleteRadar(id);
-    var newRadar = new Radar(id, type_id, x, y, radius);	
 }
 
 function deleteRadar(id){
@@ -166,8 +176,11 @@ function addRadarToQt()
 {
 	for(var i=0,len1=radarArray.length;i<len1;i++)
 	{
-		radar = radarArray[i];
-		track_initial.setRadar(radar.id,radar.start.lng(),radar.start.lat(),radar.center.lng(),radar.center.lat());
+		radar = radarArray[i];  
+        var center = radar.circle.getCenter();   
+        var north_point = center.DestinationPoint(0,radar.circle.getRadius());
+		track_initial.setRadar(radar.id,north_point.lng(),north_point.lat(),center.lng(),
+            center.lat(),radar.scan_start_pos,radar.scan_angle);
 	}
 }
 

@@ -45,10 +45,15 @@ function createObject(){
 }
 
 function placeLineTarget(trackid,batch,type,type_id){
-    var track = getTrack(trackid);
-    if(track){
+    var get_track;
+    if(trackid == -1){
+        get_track = track;
+    }else{
+        get_track = getTrack(trackid);
+    }
+    if(get_track){
         var targetArray = [];
-        var start_point = track.drama[0].flightPath.getPath().getAt(0);
+        var start_point = get_track.drama[0].flightPath.getPath().getAt(0);
         var offset = batch/2;
         for(var i=0;i<batch;i++){
             plane = new addObject(-1);
@@ -63,8 +68,8 @@ function placeLineTarget(trackid,batch,type,type_id){
             objectArray.push(plane);
             targetArray.push(plane);
         }
-        track.batch_count = batch;
-        track.targetArray = targetArray;
+        get_track.batch_count = batch;
+        get_track.targetArray = targetArray;
     }
 
 }

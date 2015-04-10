@@ -30,19 +30,19 @@ function MenuControl(map) {
     this.init();
     this.hide();
     var self = this;
-    google.maps.event.addListener(map, "click", function() {
+    this.map_click_listener = google.maps.event.addListener(map, "click", function() {
         self.hide();
     });
-    google.maps.event.addListener(map, "movestart", function() {
+    this.map_move_start_listener = google.maps.event.addListener(map, "movestart", function() {
         self.hide();
     });
-    google.maps.event.addListener(map, "zoom_changed", function() {
+    this.map_zoom_change_listener = google.maps.event.addListener(map, "zoom_changed", function() {
         self.hide();
     });
-    google.maps.event.addListener(map, "dragstart", function() {
+    this.map_drag_start_listener = google.maps.event.addListener(map, "dragstart", function() {
         self.hide();
     });
-    google.maps.event.addListener(map, "rightclick", function(e) {
+    this.right_click_listener = google.maps.event.addListener(map, "rightclick", function(e) {
         if (this.menu.isEnable) {
             this.menu.coordinate = { point: e.pixel, latlng: e.latLng };
             this.menu.container.style.left = e.pixel.x + "px";
@@ -280,6 +280,19 @@ MenuItem.prototype.hide = function() {
 google.maps.Map.prototype.enableRightClickMenu = function(){
     this.menu = new MenuControl(map);
     this.menu.sender = this;
+};
+
+google.maps.Map.prototype.disableRightClickMenu = function(){
+    var d = this.menu;
+    if(d){
+        google.maps.event.removeListener(d.map_click_listener);
+        google.maps.event.removeListener(d.map_move_start_listener);
+        google.maps.event.removeListener(d.map_zoom_change_listener);
+        google.maps.event.removeListener(d.map_drag_start_listener);
+        google.maps.event.removeListener(d.right_click_listener);
+        map.controls[google.maps.ControlPosition.TOP_RIGHT].pop();
+        this.menu = null;           
+    } 
 };
 
 })();

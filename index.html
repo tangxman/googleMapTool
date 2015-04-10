@@ -98,14 +98,29 @@
 
         }
 
-        function testCurve(){
-            map.getCursorObject().setCursor("crosshair");
+        function testCreateTrack(){
+           createTrack(3,'50-50-55-55-60-60',3,0,0);
+           overTrack(1);
+		   createTrack(3,'34-70-46-67-49-58',3,0,0);
+		   overTrack(1); 
+		   createTrack(4,'47-80-56-90-67-100-72-94',5,0,0);
+		   overTrack(1);
         }
 
 
 		function viewLine(){
-			//var vl = selectedShape.getBounds();
-            createLine(0,0,0,0,0);
+			updateRadar(-1,0,113.811,36.961,0,90,30,1550.19) 
+			updateRadar(-1,2,99.6139,42.9686,0,30,50,1622.55) 
+			updateLine(-1,'116.607-52.9102-89.2893-41.5179')
+			updateCircle(-1,89.2893,41.5179,81.7608,34.6825,150.902,0) 
+			updateCircle(-1,78.5066,25.0487,94.0218,32.4041,92.299,1) 
+			placeLineTarget(-1,3,0,2)
+			overTrack(1)
+			updateLine(-1,'67.9888-40.5899-81.5437-29.1976') 
+			updateCircle(-1,81.5437,29.1976,74.0152,22.3622,96.408,0) 
+			updateCircle(-1,79.9676,14.1178,86.2761,41.4177,292.674,0) 
+			placeLineTarget(-1,3,0,2)
+			overTrack(1) 			
 		}
     </script>
 </head>
@@ -125,13 +140,13 @@
      	
         <div>
 
-	        <input type="button" value="drawLine" style="width:100px" onclick="createRadar(0)" />
-	        <input type="button" value="createLine" style="width:100px" onclick="createLine()" />
-	        <button id="delete-button" onclick="createCirArc()">createCirArc</button>
+	        <input type="button" value="drawLine" style="width:100px" onclick="createLine()" />
+	        <input type="button" value="createLine" style="width:100px" onclick="createRadar()" />
+	        <button id="delete-button" onclick="viewLine()">updateLine</button>
             <button id="delete-button" onclick="clearAll()">clearAll</button>
             <button id="delete-button" onclick="addTracksToQt()">addTracksToQt</button>
             <button id="delete-button" onclick="addRadarToQt()">addRadarToQt</button>
-            <button id="delete-button" onclick="updateRadarCapLine(104.312,34.587,114.312,38.587,1)">updateRadarCapLine</button>
+            <button id="delete-button" onclick="createCirArc()">createCirArc</button>
         </div>
     </div>  
 
