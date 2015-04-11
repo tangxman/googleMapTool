@@ -169,15 +169,6 @@ function setCenter(center_x, center_y){
     map.setCenter(center);
 }
 
-function clearDrawingMode()
-{
-	drawingManager.setDrawingMode(null);
-	google.maps.event.clearListeners(map,'mousemove');
-	google.maps.event.clearListeners(map,'click');
- 	google.maps.event.addListener(map, 'click', clearSelection);
- 	line = null;
-}
-
 function deleteSelectedShape (){
 	if(selectedShape){
     	if(selectedShape.objType==objTypes.RADAR){
@@ -274,27 +265,26 @@ function pasteSelectedShape()
 function clearAll()
 {
 	if(dramaArray){
-		for(var i=0,len1=dramaArray.length;i<len1;i++){
+		var len1 = dramaArray.length;
+		for(var i=0;i<len1;i++){
 			var currentDrama = dramaArray[i].drama;
 			if(currentDrama){
-				for(var j=0,len2=currentDrama.length;j<len2;j++){
+				var len2 = currentDrama.length;
+				for(var j=0;j<len2;j++){
 					currentDrama[j].flightPath.setMap(null);
-					for(var k=0;k<currentDrama[j].flightPath.markerarray.length;k++){
-						currentDrama[j].flightPath.markerarray[k].setMap(null);
-						currentDrama[j].flightPath.labelarray[k].setMap(null);
+					var len3 = currentDrama[j].flightPath.markerarray.length
+					for(var k=0;k<len3;k++){
+						currentDrama[j].flightPath.markerarray[k].label.setMap(null);
 					}
-					currentDrama[j].flightPath.markerarray.splice(0,currentDrama[j].flightPath.markerarray.length);
-					currentDrama[j].flightPath.labelarray.splice(0,currentDrama[j].flightPath.labelarray.length);					
+					currentDrama[j].flightPath.markerarray.splice(0,len3);					
 				}
-				currentDrama.splice(0,currentDrama.length);				
+				currentDrama.splice(0,len2);				
 			}
 		}
-		dramaArray.splice(0,dramaArray.length);
+		dramaArray.splice(0,len1);
 	}
+	clearRadarCapLine();
 	clearObject();
 	clearRadar();
-	for(var i=0;i<radarLineArray.length;i++){
-		radarLineArray[i].setMap(null);
-	}
-	radarLineArray.splice(0,radarLineArray.length);
+	
 }

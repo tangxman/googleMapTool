@@ -1,21 +1,13 @@
-var poly;
-var anotherCircle;
-
-var line;
+var poly = new Object();
+poly.endState = true;
+poly.currentAlreadyDistance = 0;
+poly.lastPolyEndPoint = null;
 
 var dramaArray = new Array();
-
-var track = new Track(GenerateId(),new Array(),new Array());
-
 var radarLineArray = new Array();
 var drawingLineArray = new Array();
 
-var trackStartPoint;
-
-var start;
-var alreadyDistance = 0;
-
-var endState = new Boolean(true);
+var track = new Track(GenerateId(),new Array(),new Array());
 
 var polyOptions = {       
     strokeColor: "#FF0000",
@@ -28,8 +20,6 @@ var polyOptions = {
 var createDiv = function(combineobject,point,direc,type){
 	var marker = new google.maps.Marker({
 		position: point,
-		map: map,
-		visible: false
 	});
 
 	var label = new Label({
@@ -43,18 +33,46 @@ var createDiv = function(combineobject,point,direc,type){
 		label.bindTo('text', marker, 'position');
 	}
 	combineobject.markerarray.push(marker);
-	combineobject.labelarray.push(label);
 	marker.label = label;
 	return marker;
 };
 
-var getLine = function(id,array){
-	for(var i = 0;i<array.length;i++){
-		if(id == array[i].id){
-			return array[i];
-		}
+function Track(drama_id,drama,target_array){
+	this.dramaId = drama_id;
+	this.drama = drama;
+	this.targetArray = target_array;
+}
+
+var createTrack = function(size,point_array,batch_count,type,type_id){
+	line = new Object;
+	line.id = GenerateId();
+	line.dramaId = track.dramaId;
+	point_array = point_array.split("-");
+	poly = new google.maps.Polyline(polyOptions);
+	poly.markerarray = [];
+	var path = poly.getPath();	
+	for(var i=0;i<point_array.length;i+=2){
+		path.push(new google.maps.LatLng(parseFloat(point_array[i+1]),parseFloat(point_array[i])));
 	}
-	return null;
+	poly.setMap(map);
+	line.flightPath = poly;
+	track.drama.push(line);
+	drawingLineArray.push(line);
+	placeLineTarget(track.dramaId,batch_count,type,type_id);
+	google.maps.event.addListener(poly,'dblclick',function(event){	
+
+		lineSettings.targetBatchArrayClear();
+		lineSettings.turningPointArrayClear();
+
+		var added_distance = 0;
+		var path = poly.getPath();
+		for(var i = 1;i<path.getLength();i++){
+			var turningPoint = path.getAt(i);
+			added_distance+=path.getAt(i-1).distanceFrom(turningPoint);
+			lineSettings.turningPoint_push(turningPoint.lng(),turningPoint.lat(),added_distance/1000);
+		}						
+		lineSettings.updateLine(line.id,line.dramaId, poly.getPath().getAt(0).lng(),poly.getPath().getAt(0).lat());
+	});
 };
 
 var deleteTrack = function(id,drama_id){
@@ -94,45 +112,41 @@ var getTrack = function(drama_id){
 	}
 };
 
-function Track(drama_id,drama,target_array){
-	this.dramaId = drama_id;
-	this.drama = drama;
-	this.targetArray = target_array;
-}
-
-var overTrack=function(flag){
-	if(endState==false){
-		if(poly){
-			poly.setMap(null);
-			google.maps.event.clearListeners(poly,'click');
-			google.maps.event.clearListeners(map,'mousemove');
-			google.maps.event.clearListeners(map,'click');
-			for(var i=0;i<poly.markerarray.length;i++){
-				poly.markerarray[i].setMap(null);
-				poly.markerarray[i]=null;
-				poly.labelarray[i].setMap(null);
-				poly.labelarray[i]=null;
-			}
-			poly = null;
-			start = trackStartPoint;
-		}
-		if(anotherCircle){
-			anotherCircle.setMap(null);
-			anotherCircle = null;
-		}
+var clearRadarCapLine = function(){
+	for(var i=0,m=radarLineArray.length;i<m;i++){
+		radarLineArray[i].setMap(null);
 	}
-	if(flag==1){		
-		trackStartPoint = null;
-		start = null;
-		alreadyDistance = 0;
-		if(track.drama.length>0){
-			dramaArray.push(track);
-			track = new Track(GenerateId(),new Array(),new Array());			
-		}
-	}
+	radarLineArray.splice(0,radarLineArray.length);
 };
 
-//画圆弧
+var clearUnfinishedPoly = function(){
+	poly.setMap(null);
+	google.maps.event.removeListener(poly.map_click_listener);
+	google.maps.event.removeListener(poly.mouse_move_listener);
+	google.maps.event.removeListener(poly.map_right_click_listener);
+	google.maps.event.removeListener(poly.poly_click_listener);
+	for(var i=poly.markerarray.length-1;i>=0;i--){
+		poly.markerarray.pop().label.setMap(null);
+	}
+	if(typeof poly.anotherCircle !== 'undefined'){
+		poly.anotherCircle.setMap(null);
+		poly.anotherCircle = null;
+	}
+}
+
+var overTrack=function(){
+	if(poly.endState==false){
+		clearUnfinishedPoly();
+	}		
+	poly.endPoint = null;
+	poly.currentAlreadyDistance = null;
+	if(track.drama.length>0){
+		dramaArray.push(track);
+		track = new Track(GenerateId(),new Array(),new Array());	
+		map.enableRightClickMenu();		
+	}		
+};
+
 var drawArc = function(center, initialBearing, deltaBearing, radius) { 
 	var d2r = Math.PI / 180;   // degrees to radians 
 	var r2d = 180 / Math.PI;   // radians to degrees 
@@ -201,125 +215,121 @@ Number.prototype.toDeg = function () {
   return this * 180 / Math.PI;
 };
 
-Number.prototype.toBrng = function () {
-  return (this.toDeg() + 360) % 360;
+google.maps.Polyline.prototype.endState = false;
+
+google.maps.Polyline.prototype.endPoint = null;
+
+var getLine = function(id,array){
+	for(var i = 0,m = array.length;i<m;i++){
+		if(id == array[i].id){
+			return array[i];
+		}
+	}
+	return null;
 };
 
-
-function Line(id){
-	if(id!=-1){
-		overTrack(0);
-		this.id = id;
-		this.dramaId = track.dramaId;
-	    var movepositionmarker,movedistancemarker;
-	    var markerarray = [];
-	    var labelarray = [];          
-	    poly = new google.maps.Polyline(polyOptions);
-	    poly.setMap(map);
-	    poly.markerarray = markerarray;
-	    poly.labelarray = labelarray;
-	    this.flightPath = poly;
-	    var self = this;
-	    movepositionmarker = createDiv(poly,null,"down","position");
-	    movedistancemarker = createDiv(poly,null,"top","distance");
-	    if(trackStartPoint){
-	        var path = poly.getPath();
-	        path.push(trackStartPoint);
-	        path.push(trackStartPoint);
-	        start = trackStartPoint;
-	    }else{
-	        google.maps.event.addListenerOnce(map, 'click', function(event){
-		        var path = poly.getPath();
-		        start = event.latLng;
-		        path.push(start);
-		        
-		        createDiv(poly,start,"down","position");
-		        createDiv(poly,start,"top","distance").setTitle("起点");
-		    });
-	    }
-	    endState = false;
-	    google.maps.event.addListener(map,'mousemove',function(event){
-	    	var path = poly.getPath();
-			path.pop(); 
-			path.push(event.latLng);
-			movepositionmarker.setPosition(event.latLng);
-			if(start){
-				movedistancemarker.setPosition(event.latLng);
-				movedistancemarker.setTitle(((alreadyDistance+start.distanceFrom(event.latLng))/1000).toFixed(2)+"公里");
-			}		
-	    });
-	    google.maps.event.addListener(poly, 'click', function(event){
-	        var path = poly.getPath();
-			var end = event.latLng;	
-			path.push(end);
-			alreadyDistance += start.distanceFrom(event.latLng);			
-			start = end;
-			createDiv(poly,end,"down","position");
-			createDiv(poly,end,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");	
-		});
-		google.maps.event.addListenerOnce(poly, 'dblclick', function(event){
-			var path = poly.getPath();
-			var end = event.latLng;	
-			path.pop();			
-			trackStartPoint = end;
-			endState = true;
-			google.maps.event.clearListeners(poly,'click');
-			google.maps.event.clearListeners(map,'mousemove');
-			alreadyDistance += start.distanceFrom(event.latLng);
-			start = end;
-
-			movepositionmarker.label.setMap(null);
-			movedistancemarker.label.setMap(null);
-			movepositionmarker = null;
-			movedistancemarker = null;
-
-			poly.markerarray.splice(0,2);
-			poly.labelarray.splice(0,2);
-
-			poly.markerarray.splice(-2,2);
-			poly.labelarray.pop().setMap(null);
-			poly.labelarray.pop().setMap(null);
-
-			createDiv(poly,end,"down","position");
-			createDiv(poly,end,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");
-
-			track.drama.push(self);
-			drawingLineArray.push(self);
-
-			var firstPoint = path.getAt(0);
-
-			self.start = firstPoint;
-
-			google.maps.event.addListener(poly,'dblclick',function(event){	
-
-				lineSettings.targetBatchArrayClear();
-				lineSettings.turningPointArrayClear();
-
-				var added_distance = 0;
-				for(var i = 1;i<path.getLength();i++){
-					var turningPoint = path.getAt(i);
-					added_distance+=path.getAt(i-1).distanceFrom(turningPoint);
-					lineSettings.turningPoint_push(turningPoint.lng(),turningPoint.lat(),added_distance/1000);
-				}				
-				
-				lineSettings.updateLine(self.id,self.dramaId, firstPoint.lng(),firstPoint.lat());
-			});
-
-		});
-
-		google.maps.event.addListenerOnce(map,'rightclick',function(event){
-			map.enableRightClickMenu();
-			overTrack(1);
-		});
-
-	}
-}
-
-function createLine()
-{
+var createLine = function(){
+	var trackStartPoint = poly.endPoint;
+	var alreadyDistance = poly.currentAlreadyDistance;
 	map.disableRightClickMenu();
-	line = new Line(GenerateId());
-}
+	if(poly.endState==false){
+		clearUnfinishedPoly();
+		trackStartPoint = poly.lastPolyEndPoint;
+		alreadyDistance = poly.lastPolyAlreadyDistance;
+	}	
+    var movepositionmarker,movedistancemarker;   
+    poly = new google.maps.Polyline(polyOptions);
+    poly.setMap(map);
+    poly.markerarray = [];
+    poly.lastPolyEndPoint = trackStartPoint;
+    poly.lastPolyAlreadyDistance = alreadyDistance;
+    var line = new Object();		
+	line.id = GenerateId();
+	line.dramaId = track.dramaId;
+    line.flightPath = poly;
+    var self = line;
+    movepositionmarker = createDiv(poly,null,"down","position");
+    movedistancemarker = createDiv(poly,null,"top","distance");
+    if(trackStartPoint){
+        var path = poly.getPath();
+        path.push(trackStartPoint);
+        path.push(trackStartPoint);
+        poly.endPoint = trackStartPoint;
+        poly.startPoint = trackStartPoint;
+    }else{
+        poly.map_click_listener = google.maps.event.addListenerOnce(map, 'click', function(event){
+	        var path = poly.getPath();
+	        var end = event.latLng;
+	        poly.startPoint = end;
+	        poly.endPoint = end;
+	        path.push(end);
+	        
+	        createDiv(poly,end,"down","position");
+	        createDiv(poly,end,"top","distance").setTitle("起点");
+	    });
+    }
+    poly.mouse_move_listener = google.maps.event.addListener(map,'mousemove',function(event){
+    	var path = poly.getPath();
+		path.pop(); 
+		path.push(event.latLng);
+		movepositionmarker.setPosition(event.latLng);
+		if(poly.endPoint){
+			movedistancemarker.setPosition(event.latLng);
+			movedistancemarker.setTitle(((alreadyDistance+poly.endPoint.distanceFrom(event.latLng))/1000).toFixed(2)+"公里");
+		}		
+    });
+    poly.poly_click_listener = google.maps.event.addListener(poly, 'click', function(event){
+        var path = poly.getPath();
+		var end = event.latLng;	
+		path.push(end);
+		alreadyDistance += poly.endPoint.distanceFrom(end);			
+		poly.endPoint = end;
+		createDiv(poly,end,"down","position");
+		createDiv(poly,end,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");	
+	});
+	google.maps.event.addListenerOnce(poly, 'dblclick', function(event){
+		var path = poly.getPath();
+		var end = event.latLng;	
+		path.pop();				
+		poly.endState = true;
+		google.maps.event.clearListeners(poly,'click');
+		google.maps.event.clearListeners(map,'mousemove');
+		alreadyDistance += poly.endPoint.distanceFrom(end);
+		poly.endPoint = end;
+		movepositionmarker.label.setMap(null);
+		movedistancemarker.label.setMap(null);
+		movepositionmarker = null;
+		movedistancemarker = null;
+		poly.markerarray.splice(0,2);
+		poly.markerarray.pop().label.setMap(null);
+		poly.markerarray.pop().label.setMap(null);
+		createDiv(poly,end,"down","position");
+		createDiv(poly,end,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");
+		poly.currentAlreadyDistance = alreadyDistance;
+		track.drama.push(self);
+		drawingLineArray.push(self);
+		var firstPoint = path.getAt(0);
+		google.maps.event.addListener(poly,'dblclick',function(event){	
+
+			lineSettings.targetBatchArrayClear();
+			lineSettings.turningPointArrayClear();
+
+			var added_distance = 0;
+			for(var i = 1;i<path.getLength();i++){
+				var turningPoint = path.getAt(i);
+				added_distance+=path.getAt(i-1).distanceFrom(turningPoint);
+				lineSettings.turningPoint_push(turningPoint.lng(),turningPoint.lat(),added_distance/1000);
+			}				
+			
+			lineSettings.updateLine(self.id,self.dramaId, firstPoint.lng(),firstPoint.lat());
+		});
+
+	});
+
+	poly.right_click_listener = google.maps.event.addListenerOnce(map,'rightclick',function(event){
+		overTrack();	
+	});
+};
 
 var updateLine = function(id,point_array){
 	var update_line = getLine(id,drawingLineArray);
@@ -328,7 +338,6 @@ var updateLine = function(id,point_array){
 		poly = new google.maps.Polyline(polyOptions);
 		poly.setMap(map);	
 		poly.markerarray = [];
-    	poly.labelarray = [];
     	update_line.id = GenerateId();
     	update_line.dramaId = track.dramaId;
     	update_line.flightPath = poly;
@@ -336,20 +345,20 @@ var updateLine = function(id,point_array){
     	drawingLineArray.push(update_line);
 	}
 	var marker_array_length = update_line.flightPath.markerarray.length;
-	for(var i=0;i<marker_array_length;i++){
-		update_line.flightPath.markerarray[i].setMap(null);
-		update_line.flightPath.labelarray[i].setMap(null);
+	for(var i=marker_array_length-1;i>=0;i--){
+		update_line.flightPath.markerarray.pop().label.setMap(null);
 	}
-	update_line.flightPath.markerarray.splice(0,marker_array_length);
-	update_line.flightPath.labelarray.splice(0,marker_array_length);
 	point_array = point_array.split("-");
 	var path = update_line.flightPath.getPath();
-	for(var i=0;i<point_array.length;i+=2){
+	var m=point_array.length;
+	for(var i=0;i<m;i+=2){
 		var pos = new google.maps.LatLng(parseFloat(point_array[i+1]),parseFloat(point_array[i]));
 		path.push(pos);
 		//createDiv(update_line.flightPath,pos,"down","position");
 		//createDiv(update_line.flightPath,pos,"down","position");
 	}
+	update_line.flightPath.startPoint = path.getAt(0);
+	update_line.flightPath.endPoint = path.getAt(m-1);
 	// if(marker_array_length<point_array.length){
 	// 	createDiv(update_line.flightPath,start_point,"down","position");
  //    	createDiv(update_line.flightPath,start_point,"top","distance").setTitle("起点");
@@ -357,76 +366,38 @@ var updateLine = function(id,point_array){
 
 };
 
-var createTrack = function(size,point_array,batch_count,type,type_id){
-	line = new Line(-1);
-	line.id = GenerateId();
-	line.dramaId = track.dramaId;
-	point_array = point_array.split("-");
-	poly = new google.maps.Polyline(polyOptions);
-	poly.markerarray = [];
-	poly.labelarray = [];
-	var path = poly.getPath();	
-	for(var i=0;i<point_array.length;i+=2){
-		path.push(new google.maps.LatLng(parseFloat(point_array[i+1]),parseFloat(point_array[i])));
+function createCirArc(){
+	var trackStartPoint = poly.endPoint;
+	var alreadyDistance = poly.currentAlreadyDistance;
+	map.disableRightClickMenu();
+	if(poly.endState==false){
+		clearUnfinishedPoly();
+		trackStartPoint = poly.lastPolyEndPoint;
+		alreadyDistance = poly.lastPolyAlreadyDistance;
 	}
-	poly.setMap(map);
-	line.flightPath = poly;
-	track.drama.push(line);
-	drawingLineArray.push(line);
-	placeLineTarget(track.dramaId,batch_count,type,type_id);
-	google.maps.event.addListener(poly,'dblclick',function(event){	
-
-		lineSettings.targetBatchArrayClear();
-		lineSettings.turningPointArrayClear();
-
-		var added_distance = 0;
-		var path = poly.getPath();
-		for(var i = 1;i<path.getLength();i++){
-			var turningPoint = path.getAt(i);
-			added_distance+=path.getAt(i-1).distanceFrom(turningPoint);
-			lineSettings.turningPoint_push(turningPoint.lng(),turningPoint.lat(),added_distance/1000);
-		}				
-		
-		lineSettings.updateLine(line.id,line.dramaId, poly.getPath().getAt(0).lng(),poly.getPath().getAt(0).lat());
-	});
-};
-
-
-var updateRadarCapLine = function(start_x,start_y,end_x,end_y,type){
-
-	if(type==0){
-		polyOptions.strokeColor = '#1E90FF';
-	}else{
-		polyOptions.strokeColor = '#000000';
-	}	
-	var capline = new google.maps.Polyline(polyOptions);
-	var path = [new google.maps.LatLng(start_y,start_x),new google.maps.LatLng(end_y,end_x)];
-	capline.setPath(path);
-	capline.setMap(map);
-	radarLineArray.push(capline);
-};
-
-function circleArc(id){
 	var centerPoint,startPoint,endPoint;
 	var startBearing,endBearing,radius;
-	overTrack(0);
 	var movepositionmarker,movedistancemarker;
-	var markerarray = [];
-    var labelarray = [];
+	var line = new Object();
+	line.id = GenerateId();	
 	poly = new google.maps.Polyline(polyOptions);
 	poly.setMap(map);
-	poly.markerarray = markerarray;
-    poly.labelarray = labelarray;
-    this.id = id;
-    this.dramaId = track.dramaId;
-	this.flightPath = poly;
-	var self = this;
+	poly.markerarray = [];
+	poly.lastPolyEndPoint = trackStartPoint;
+	poly.lastPolyAlreadyDistance = alreadyDistance;
+    line.id = GenerateId();
+    line.dramaId = track.dramaId;
+	line.flightPath = poly;
+	var self = line;
 	movepositionmarker = createDiv(poly,null,"down","position");
 	movedistancemarker = createDiv(poly,null,"top","distance");
 	if(trackStartPoint){
-		startPoint = trackStartPoint;		
-		google.maps.event.addListener(map,'mousemove',function(event){
+		startPoint = trackStartPoint;
+		poly.startPoint = startPoint;	
+		poly.endPoint = startPoint;	
+		poly.mouse_move_listener = google.maps.event.addListener(map,'mousemove',function(event){
     		centerPoint = event.latLng;
+    		poly.centerPoint = centerPoint;
     		startBearing = centerPoint.Bearing(startPoint);
     		radius = centerPoint.distanceFrom(startPoint);
 	    	var arcPts = drawArc(centerPoint,startBearing, 360, radius);
@@ -436,18 +407,21 @@ function circleArc(id){
 	   	 	movedistancemarker.setTitle((radius/1000).toFixed(2)+"公里");
     	});
 
-    	google.maps.event.addListenerOnce(map,'click',function(event){	
+    	poly.map_click_listener = google.maps.event.addListenerOnce(map,'click',function(event){	
     		google.maps.event.clearListeners(map,'mousemove');
     		createDiv(poly,event.latLng,"down","position");
     		createDiv(poly,event.latLng,"top","distance").setTitle((radius/1000).toFixed(2)+"公里");
     	});
 	}else{
-		google.maps.event.addListenerOnce(map,'click',function(event){
+		poly.map_click_listener = google.maps.event.addListenerOnce(map,'click',function(event){
     		startPoint = event.latLng;
+    		poly.startPoint = startPoint;
+    		poly.endPoint = startPoint;
     		createDiv(poly,startPoint,"down","position");
     		createDiv(poly,startPoint,"top","distance").setTitle("起点");
-    		google.maps.event.addListener(map,'mousemove',function(event){
+    		self.map_mousemove_listener = google.maps.event.addListener(map,'mousemove',function(event){
 	    		centerPoint = event.latLng;
+	    		poly.centerPoint = centerPoint;
 	    		startBearing = centerPoint.Bearing(startPoint);
 	    		radius = centerPoint.distanceFrom(startPoint);
 		    	var arcPts = drawArc(centerPoint,startBearing, 360, radius);
@@ -456,18 +430,16 @@ function circleArc(id){
 		   	 	movedistancemarker.setPosition(centerPoint);
 	   	 		movedistancemarker.setTitle((radius/1000).toFixed(2)+"公里");
 	    	});
-	    	google.maps.event.addListenerOnce(map,'click',function(event){
+	    	self.map_click_listener = google.maps.event.addListenerOnce(map,'click',function(event){
 	    		google.maps.event.clearListeners(map,'mousemove');
 	    		createDiv(poly,event.latLng,"down","position");
     			createDiv(poly,event.latLng,"top","distance").setTitle((radius/1000).toFixed(2)+"公里");
 	    	});
     	});   	
 	}
-	endState = false;
-	google.maps.event.addListenerOnce(poly,'click',function(event){
+	poly.poly_click_listener = google.maps.event.addListenerOnce(poly,'click',function(event){
     	endPoint = event.latLng;
     	endBearing = centerPoint.Bearing(endPoint);
-    	start = endPoint;
     	var arcPts = drawArc(centerPoint,startBearing, endBearing-startBearing, radius);
 		poly.setPath(arcPts); 
 
@@ -487,8 +459,7 @@ function circleArc(id){
 
 		createDiv(poly,endPoint,"down","position");
 		
-
-		google.maps.event.addListenerOnce(map, 'click', function(event){
+		poly.map_click_listener = google.maps.event.addListenerOnce(map, 'click', function(event){
 			var selectPoint = event.latLng;
 			var selectBearing = centerPoint.Bearing(selectPoint);
 
@@ -515,23 +486,20 @@ function circleArc(id){
 				}
 			}			
 			poly.setPath(pathArray);
-			trackStartPoint = pathArray[pathArray.length-1];
 			
 			createDiv(poly,endPoint,"top","distance").setTitle((alreadyDistance/1000).toFixed(2)+"公里");
 			anotherCircle.setMap(null);
 			anotherCircle = null;			
-			endState = true;
+			poly.endState = true;
 			
 			movepositionmarker.label.setMap(null);
 			movedistancemarker.label.setMap(null);
 			movepositionmarker = null;
 			movedistancemarker = null;
 			poly.markerarray.splice(0,2);
-			poly.labelarray.splice(0,2);
-
-			poly.centerPoint = centerPoint;
-			poly.startPoint = startPoint;
-			poly.endPoint = trackStartPoint;
+			
+			poly.endPoint = pathArray[pathArray.length-1];
+			poly.currentAlreadyDistance = alreadyDistance;
 			track.drama.push(self);
 			drawingLineArray.push(self);
 
@@ -545,27 +513,19 @@ function circleArc(id){
 		});
     });
 
-	google.maps.event.addListenerOnce(map,'rightclick',function(event){
-		map.enableRightClickMenu();
-		overTrack(1);
+	poly.map_right_click_listener = google.maps.event.addListenerOnce(map,'rightclick',function(event){		
+		overTrack();		
 	});
-	
+
 }
 
-function createCirArc(){
-	map.disableRightClickMenu();
-	line = new circleArc(GenerateId());
-}
-
-function updateCircle(id,start_x,start_y,center_x,center_y,angle,direction)
-{
+var updateCircle = function(id,start_x,start_y,center_x,center_y,angle,direction){
 	var circle_arc = getLine(id,drawingLineArray);
 	if(!circle_arc){
 		circle_arc = new Object();
 		poly = new google.maps.Polyline(polyOptions);
 		poly.setMap(map);	
 		poly.markerarray = [];
-    	poly.labelarray = [];
     	circle_arc.id = GenerateId();
     	circle_arc.dramaId = track.dramaId;
     	circle_arc.flightPath = poly;
@@ -574,12 +534,9 @@ function updateCircle(id,start_x,start_y,center_x,center_y,angle,direction)
 	}
 	circle_arc.direction = direction;
 	var marker_array_length = circle_arc.flightPath.markerarray.length;
-	for(var i=0;i<marker_array_length;i++){
-		circle_arc.flightPath.markerarray[i].setMap(null);
-		circle_arc.flightPath.labelarray[i].setMap(null);
+	for(var i=marker_array_length-1;i>=0;i--){
+		circle_arc.flightPath.markerarray.pop().label.setMap(null);
 	}
-	circle_arc.flightPath.markerarray.splice(0,marker_array_length);
-	circle_arc.flightPath.labelarray.splice(0,marker_array_length);
 	var start_point = new google.maps.LatLng(start_y,start_x);
 	var center_point = new google.maps.LatLng(center_y,center_x);
 	circle_arc.flightPath.startPoint =start_point;
@@ -596,7 +553,21 @@ function updateCircle(id,start_x,start_y,center_x,center_y,angle,direction)
 	}
 	createDiv(circle_arc.flightPath,center_point,"down","position");
 	createDiv(circle_arc.flightPath,circle_arc.flightPath.endPoint,"down","position");
-}
+};
+
+var updateRadarCapLine = function(start_x,start_y,end_x,end_y,type){
+
+	if(type==0){
+		polyOptions.strokeColor = '#1E90FF';
+	}else{
+		polyOptions.strokeColor = '#000000';
+	}	
+	var capline = new google.maps.Polyline(polyOptions);
+	var path = [new google.maps.LatLng(start_y,start_x),new google.maps.LatLng(end_y,end_x)];
+	capline.setPath(path);
+	capline.setMap(map);
+	radarLineArray.push(capline);
+};
 
 var createRandomTrack = function(){
 	var select_area_option = {
@@ -682,14 +653,15 @@ var addTracksToQt = function(){
 				track_initial.setLine(pathArr[k].lng(),pathArr[k].lat(),pathArr[k+1].lng(),pathArr[k+1].lat(),currentLine.id);
 			}
 		}
-		var targetArray = dramaArray[i].targetArray;
-		if(targetArray.length!=0){
-			var ids = [];
-			for(var h=0;h<targetArray.length;h++){
-				ids.push(targetArray[h].id);
-			}
-			track_initial.setTarget(ids,dramaArray[i].batch_count,targetArray[0].type,targetArray[0].type_id);
+		if(dramaArray[i].targetArray.length==0){
+			placeLineTarget(dramaArray[i].dramaId,1,0,0);
 		}
+		var targetArray = dramaArray[i].targetArray;
+		var ids = [];
+		for(var h=0;h<targetArray.length;h++){
+			ids.push(targetArray[h].id);
+		}
+		track_initial.setTarget(ids,dramaArray[i].batch_count,targetArray[0].type,targetArray[0].type_id);
 		track_initial.push_back_track_slot();
 	}
 };

@@ -25,8 +25,7 @@ function Radar(id){
         var image = "images/radar.png";
         this.id = id;
         this.type_id = -1;
-        this.markerarray = new Array();
-        this.labelarray = new Array();
+        this.markerarray = [];
 
         var self = this;
 
@@ -97,6 +96,7 @@ function updateRadar(id,type_id,x,y,scan_type,scan_start_pos,scan_angle,radius){
         radar.marker = marker;
         radar.circle = new google.maps.Circle(circleOptions);
         radar.circle.setMap(map);
+        radar.markerarray = [];
         radarArray.push(radar);
     }
     if(scan_type==1){
@@ -150,7 +150,7 @@ function deleteRadar(id){
     if(index!=-1){
         var radar = radarArray[index];
         radar.marker.setMap(null);    
-        radar.radarCircle.setMap(null);
+        radar.circle.setMap(null);
         //radar.sector.setMap(null);
         radarArray.splice(index,1);
     }
@@ -159,15 +159,17 @@ function deleteRadar(id){
 	
 
 function clearRadar(){
-	for(r in radarArray){
+	for(var r=0,m=radarArray.length;r<m;r++){
 		radarArray[r].marker.setMap(null);
-		radarArray[r].radarCircle.setMap(null);
-        for(var k=0;k<radarArray[r].markerarray.length;k++){
-            radarArray[r].markerarray[k].setMap(null);
-            radarArray[r].labelarray[k].setMap(null);
+		radarArray[r].circle.setMap(null);
+        if(radarArray[r].sector){
+            radarArray[r].sector.setMap(null);
         }
-        radarArray[r].markerarray.splice(0,radarArray[r].markerarray.length);
-        radarArray[r].labelarray.splice(0,radarArray[r].labelarray.length); 
+        var n = radarArray[r].markerarray.length;       
+        for(var k=0;k<n;k++){
+            radarArray[r].markerarray[k].label.setMap(null);
+        }
+        radarArray[r].markerarray.splice(0,n);
 	}
 	radarArray.splice(0,radarArray.length);
 }

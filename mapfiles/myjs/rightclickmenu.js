@@ -278,8 +278,10 @@ MenuItem.prototype.hide = function() {
 };
 
 google.maps.Map.prototype.enableRightClickMenu = function(){
-    this.menu = new MenuControl(map);
-    this.menu.sender = this;
+    if(!this.menu){
+        this.menu = new MenuControl(map);
+        this.menu.sender = this;
+    }
 };
 
 google.maps.Map.prototype.disableRightClickMenu = function(){
