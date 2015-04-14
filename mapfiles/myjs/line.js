@@ -185,6 +185,7 @@ var clearUnfinishedPoly = function(){
 		poly.anotherCircle.setMap(null);
 		poly.anotherCircle = null;
 	}
+	changeCursor();
 }
 
 var overTrack=function(){
@@ -196,7 +197,7 @@ var overTrack=function(){
 	if(track.drama.length>0){
 		dramaArray.push(track);
 		track = new Track(GenerateId(),new Array(),new Array());	
-		map.enableRightClickMenu();		
+		map.enableRightClickMenu();				
 	}		
 };
 
@@ -216,17 +217,18 @@ var deleteLine = function(id,drama_id){
 			}
 		}
 	}
-	for(var i=0,len1=dramaArray.length;i<len1;i++){
+	var i;
+	for(i=0,len1=dramaArray.length;i<len1;i++){
 		var currentDrama = dramaArray[i];
 		if(currentDrama&&currentDrama.dramaId==drama_id){
 			for(var j=0,len2=currentDrama.drama.length;j<len2;j++){
 				if(id == currentDrama.drama[j].id){
 					var poly = currentDrama.drama[j].flightPath;
 					poly.setMap(null);
-					for(var i=poly.markerarray.length-1;i>=0;i--){
+					for(var k=poly.markerarray.length-1;k>=0;k--){
 						poly.markerarray.pop().label.setMap(null);
 					}
-					currentDrama.splice(j,1);
+					dramaArray[i].drama.splice(j,1);
 					return;
 				}
 			}
@@ -247,6 +249,7 @@ var createLine = function(){
 	var trackStartPoint = poly.endPoint;
 	var alreadyDistance = poly.currentAlreadyDistance;
 	map.disableRightClickMenu();
+	changeCursor();
 	if(poly.endState==false){
 		clearUnfinishedPoly();
 		trackStartPoint = poly.lastPolyEndPoint;
@@ -346,6 +349,8 @@ var createLine = function(){
 			setSelection(self);
 		});
 
+		changeCursor();
+
 	});
 
 	poly.right_click_listener = google.maps.event.addListenerOnce(map,'rightclick',function(event){
@@ -397,6 +402,7 @@ function createCirArc(){
 	var trackStartPoint = poly.endPoint;
 	var alreadyDistance = poly.currentAlreadyDistance;
 	map.disableRightClickMenu();
+	changeCursor();
 	if(poly.endState==false){
 		clearUnfinishedPoly();
 		trackStartPoint = poly.lastPolyEndPoint;
@@ -541,6 +547,8 @@ function createCirArc(){
 			google.maps.event.addListener(poly,'click',function(event){
 	    		setSelection(self);
 	    	});
+
+	    	changeCursor();
 		});
     });
 
@@ -605,6 +613,7 @@ var updateRadarCapLine = function(start_x,start_y,end_x,end_y,type){
 };
 
 var createRandomTrack = function(){
+	changeCursor();
 	var select_area_option = {
 		strokeColor: "#FF0000",
 	    strokeOpacity: 1.0,
@@ -615,7 +624,6 @@ var createRandomTrack = function(){
 	}
 	select_area = new google.maps.Rectangle(select_area_option);
 	select_area.setMap(map);
-	map.draggable = false;
 	google.maps.event.addListenerOnce(map,'mousedown',function(event){
 		var first_point = event.latLng;
 		var min_lat,max_lat;
@@ -666,10 +674,10 @@ var createRandomTrack = function(){
 	});
 
 	google.maps.event.addListenerOnce(select_area,'mouseup',function(event){
-		map.draggable = true;
 		google.maps.event.clearListeners(map,'mousemove');
 		google.maps.event.clearListeners(select_area,'mousemove');
 		var bounds = select_area.getBounds();
+		changeCursor();
 		randomSettings.initial(bounds.getNorthEast().lng(),bounds.getNorthEast().lat(),bounds.getSouthWest().lng(),bounds.getSouthWest().lat());
 	});
 };
@@ -687,23 +695,26 @@ var addTracksToQt = function(){
 	for(var i=0,len1 = dramaArray.length;i<len1;i++)
 	{
 		var currentDrama = dramaArray[i].drama;
-		for(var j=0,len2 = currentDrama.length;j<len2;j++){
-			var currentLine = currentDrama[j];
-			var pathArr = currentLine.flightPath.getPath().getArray();
-			for(var k=0,len3=pathArr.length;k<len3-1;k++)
-			{
-				track_initial.setLine(pathArr[k].lng(),pathArr[k].lat(),pathArr[k+1].lng(),pathArr[k+1].lat(),currentLine.id);
+		var len2 = currentDrama.length;
+		if(len2>0){
+			for(var j=0,len2 = currentDrama.length;j<len2;j++){
+				var currentLine = currentDrama[j];
+				var pathArr = currentLine.flightPath.getPath().getArray();
+				for(var k=0,len3=pathArr.length;k<len3-1;k++)
+				{
+					track_initial.setLine(pathArr[k].lng(),pathArr[k].lat(),pathArr[k+1].lng(),pathArr[k+1].lat(),currentLine.id);
+				}
 			}
-		}
-		if(dramaArray[i].targetArray.length==0){
-			placeLineTarget(dramaArray[i].dramaId,1,0,0,0);
-		}
-		var targetArray = dramaArray[i].targetArray;
-		var ids = [];
-		for(var h=0,m=targetArray.length;h<m;h++){
-			ids.push(targetArray[h].id);
-		}
-		track_initial.setTarget(ids,dramaArray[i].batch_count,targetArray[0].type,targetArray[0].type_id,targetArray[0].delay);
-		track_initial.push_back_track_slot();
+			if(dramaArray[i].targetArray.length==0){
+				placeLineTarget(dramaArray[i].dramaId,1,0,0,0);
+			}
+			var targetArray = dramaArray[i].targetArray;
+			var ids = [];
+			for(var h=0,m=targetArray.length;h<m;h++){
+				ids.push(targetArray[h].id);
+			}
+			track_initial.setTarget(ids,dramaArray[i].batch_count,targetArray[0].type,targetArray[0].type_id,targetArray[0].delay);
+			track_initial.push_back_track_slot();
+		}		
 	}
 };

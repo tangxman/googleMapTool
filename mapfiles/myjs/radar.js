@@ -26,6 +26,7 @@ function Radar(id){
 
 function createRadar()
 {
+    changeCursor();
     var image = "images/radar.png";
     var radar = new Object();
     radar.id = GenerateId();
@@ -81,6 +82,8 @@ function createRadar()
             google.maps.event.addListener(marker,'click',function(event){
                 setSelection(self);
             });
+
+            changeCursor();
         });
     });      
 }

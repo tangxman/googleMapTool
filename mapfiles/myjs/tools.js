@@ -96,6 +96,20 @@ function setSelection (shape) {
 	}   
 }
 
+var changeCursor = function(){
+	if(map.get('draggable')==true){
+		map.set('draggable',false);
+		document.body.style.cursor = "crosshair";
+	}else{
+		map.set('draggable',true);
+	}			
+};
+
+var setDragMap= function(){
+	map.set('draggable',true);
+	clearSelection();
+};
+
 function setZoom(zoom){
     map.setZoom(zoom);
 }
