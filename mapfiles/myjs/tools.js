@@ -53,25 +53,7 @@ google.maps.Map.prototype.getCursorObject = function(){
 })();
 
 var selectedShape;
-var colors = ['#1E90FF', '#FF1493', '#32CD32', '#FF8C00', '#4B0082'];
-var selectedColor;
-var originColor;
-var colorButtons = {};
-
-var objTypes={
-	LINE:1,
-	CURVE:2,
-	CIRCLE:3,
-	CIRARC:4,
-	ELLIPSE:5,
-	PLANE:6,
-	RADAR:7
-};
-
 var genId = 0;
-var divId = 0;
-
-var copy;
 
 var GenerateId = function(){
 	return ++genId;
@@ -79,85 +61,39 @@ var GenerateId = function(){
 
 function clearSelection () {
 	if(selectedShape){
-		if (selectedShape.type!=google.maps.drawing.OverlayType.MARKER) {
-            selectedShape.setEditable(false);
-            selectedShape.set('strokeColor', originColor);	                
+		if (selectedShape.property == 'line') {
+            selectedShape.flightPath.set('strokeColor','#FF0000');	                
+        }else if(selectedShape.property == 'target'){
+        	var marker = selectedShape.object;
+        	// if (marker.getAnimation() != null) {
+	            marker.setAnimation(null);
+	        // } else {
+	        //     marker.setAnimation(google.maps.Animation.BOUNCE);
+	        // }
+        }else if(selectedShape.property == 'radar'){
+        	selectedShape.circle.set('strokeColor', '#FF0000');
         }
         selectedShape = null;
 	}
-    
 }
 
 function setSelection (shape) {
 	clearSelection();
-    selectedShape = shape;   
-    if(selectedShape.objType != objTypes.PLANE && selectedShape.objType != objTypes.RADAR){
-    	originColor = shape.get('strokeColor');
-    	selectColor(shape.get('fillColor') || shape.get('strokeColor'));
-    	selectedShape.set('strokeColor', '#000000');   	
-    }
-    if(selectedShape.objType == objTypes.LINE || selectedShape.objType == objTypes.CIRCLE){
-    	shape.setEditable(true);
-    }
-    
-}
-
-function selectColor (color) {
-    selectedColor = color;
-    for (var i = 0; i < colors.length; ++i) {
-        var currColor = colors[i];
-        colorButtons[currColor].style.border = currColor == color ? '2px solid #789' : '2px solid #fff';
-    }
-
-    var polylineOptions = drawingManager.get('polylineOptions');
-    polylineOptions.strokeColor = color;
-    drawingManager.set('polylineOptions', polylineOptions);
-
-    var rectangleOptions = drawingManager.get('rectangleOptions');
-    rectangleOptions.strokeColor = color;
-    drawingManager.set('rectangleOptions', rectangleOptions);
-
-    var circleOptions = drawingManager.get('circleOptions');
-    circleOptions.strokeColor = color;
-    drawingManager.set('circleOptions', circleOptions);
-
-    var polygonOptions = drawingManager.get('polygonOptions');
-    polygonOptions.strokeColor = color;
-    drawingManager.set('polygonOptions', polygonOptions);
-}
-
-function setSelectedShapeColor (color) {
-    if (selectedShape) {
-        // if (selectedShape== google.maps.drawing.OverlayType.POLYLINE) {
-        	originColor = color;
-         	selectedShape.set('strokeColor', color);
-        // } else {
-        //     selectedShape.set('fillColor', color);
-        // }
-    }
-}
-
-function makeColorButton (color) {
-    var button = document.createElement('span');
-    button.className = 'color-button';
-    button.style.backgroundColor = color;
-    google.maps.event.addDomListener(button, 'click', function () {
-        selectColor(color);
-        setSelectedShapeColor(color);
-    });
-
-    return button;
-}
-
-function buildColorPalette () {
-    var colorPalette = document.getElementById('color-palette');
-    for (var i = 0; i < colors.length; ++i) {
-        var currColor = colors[i];
-        var colorButton = makeColorButton(currColor);
-        colorPalette.appendChild(colorButton);
-        colorButtons[currColor] = colorButton;
-    }
-    selectColor(colors[0]);
+    selectedShape = shape;
+    if(selectedShape){
+		if (selectedShape.property == 'line') {
+            selectedShape.flightPath.set('strokeColor', '#000000');	             
+        }else if(selectedShape.property == 'target'){
+        	var marker = selectedShape.object;
+        	// if (marker.getAnimation() != null) {
+	        //    marker.setAnimation(null);
+	        // } else {
+	             marker.setAnimation(google.maps.Animation.BOUNCE);
+	        // }
+        }else if(selectedShape.property == 'radar'){
+        	selectedShape.circle.set('strokeColor', '#000000');
+        }
+	}   
 }
 
 function setZoom(zoom){
@@ -170,14 +106,15 @@ function setCenter(center_x, center_y){
 }
 
 function deleteSelectedShape (){
+	overTrack();
 	if(selectedShape){
-    	if(selectedShape.objType==objTypes.RADAR){
-    		deleteRadar(selectedShape.id);
-    	}else if(selectedShape.objType==objTypes.PLANE){
-    		deleteObject(selectedShape.id)
-    	}else{
-    		deleteTrack(selectedShape.id,selectedShape.dramaId);
-    	}
+    	if (selectedShape.property == 'line') {
+            deleteLine(selectedShape.id,selectedShape.dramaId);           	             
+        }else if(selectedShape.property == 'target'){
+        	deleteObject(selectedShape.id);	  
+        }else if(selectedShape.property == 'radar'){
+        	deleteRadar(selectedShape.id);
+        }
     }
 }
 
@@ -285,6 +222,5 @@ function clearAll()
 	}
 	clearRadarCapLine();
 	clearObject();
-	clearRadar();
-	
+	clearRadar();	
 }

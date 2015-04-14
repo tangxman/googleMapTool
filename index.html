@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Offline Maps Demo - by lyklinse</title>
+    <title>Offline Maps Demo - by lyklinse</title>  
 </head>
 
 <body onload="initialize()">	
@@ -18,7 +18,8 @@
             <button id="delete-button" onclick="clearAll()">clearAll</button>
             <button id="delete-button" onclick="addTracksToQt()">addTracksToQt</button>
             <button id="delete-button" onclick="addRadarToQt()">addRadarToQt</button>
-            <button id="delete-button" onclick="createCirArc()">createCirArc</button>
+            <button id="delete-button" onclick="deleteSelectedShape()">deleteSelectedShape</button>
+            <button id="delete-button" onclick="setCursor()">setCursor</button>
         </div>
     </div>  
 </body>
@@ -112,23 +113,30 @@
 
 
 		function viewLine(){
-			updateRadar(-1,0,69.312,50.4617,0,90,30,1356.64) 
-			updateRadar(-1,2,67.8502,24.8192,0,30,50,1310.49) 
-			updateRadar(-1,4,109.669,33.1847,0,45,90,1316.07) 
-			updateLine(-1,'91.9268-40.5537-94.6721-35.5036') 
-			updateLine(-1,'94.6721-35.5036-77.9873-46.188') 
-			updateCircle(-1,77.9873,46.188,85.3791,52.5986,296.98,0) 
+			updateRadar(-1,0,116.545,36.4535,0,90,30,1269.82) 
+			updateRadar(-1,2,101.539,42.3873,0,30,50,1331.23) 
+			updateLine(-1,'119.5-30.7166-90.6274-41.0009') 
+			updateLine(-1,'90.6274-41.0009-129.503-34.0727') 
+			updateLine(-1,'129.503-34.0727-95.6291-31.6231')
+			placeLineTarget(-1,3,0,0)
+			overTrack() 
+			updateLine(-1,'64.4806-17.6336-82.441-30.8855') 
+			updateLine(-1,'82.441-30.8855-74.4841-38.0875') 
+			updateLine(-1,'74.4841-38.0875-87.4427-40.3465') 
 			placeLineTarget(-1,3,0,0)
 			overTrack()
-			updateLine(-1,'87.7384-43.1029-73.3408-51.9263') 
-			updateLine(-1,'99.5318-52.1084-102.277-39.5953') 
-			updateLine(-1,'102.277-39.5953-85.5923-28.9109') 
+			updateLine(-1,'68.6862-51.9427-74.2546-43.461') 
+			updateLine(-1,'74.2546-43.461-66.2977-36.7801') 
+			updateLine(-1,'66.2977-36.7801-79.2564-51.2848') 
 			placeLineTarget(-1,3,0,0)
 			overTrack()
-			updateCircle(-1,85.5923,28.9109,92.9841,42.5085,246.925,0) 
-			updateLine(-1,'108.391-41.0374-80.9457-40.3716') 
-			placeLineTarget(-1,3,0,0)
-			overTrack()		
+
+		}
+
+		function setCursor(){
+			map.set('draggable',false);
+			document.body.style.cursor = "url('mapfiles/openhand_8_8.cur'),auro";
 		}
     </script>
+
 </html>

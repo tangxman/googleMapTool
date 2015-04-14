@@ -2,49 +2,23 @@ var objectArray = new Array();
 
 var plane;
 
-function getObject(id){
+var getObject = function(id){
     for(i in objectArray){
         if(objectArray[i].id==id){
             return i;
         }
     }
     return -1;
-} 
+};
 
-function addObject(id){
-    if(id!=-1){
-        this.id = id;
-        var self = this;
-        objectArray.push(self);
-        
-        google.maps.event.addListenerOnce(map,'click',function(event){
-            var object = new google.maps.Marker({
-                position:event.latLng,
-                icon:"images/plane_90.png",
-                map:map
-            });
-            self.object = object;
-        });
-    } 
-}
+var addTargetClickListener = function(target){
+    var self = target;
+    google.maps.event.addListener(self.object,'click',function(event){
+        setSelection(self);
+    });
+};
 
-function createObject(){
-    plane = new addObject(dramaId);
-
-    var temp = [];
-    for(var i=0;i<drama.length;i++){
-        var sel = new Line(-1);
-        sel.dramaId = dramaId;
-        sel.flightPath = drama[i].flightPath;
-        sel.id = drama[i].id;
-        sel.objType = drama[i].objType;
-        temp.push(sel);
-    }
-    ++dramaId;
-    dramaArray.push(temp);
-}
-
-function placeLineTarget(trackid,batch,type,type_id){
+var placeLineTarget = function(trackid,batch,type,type_id,delay){
     var get_track;
     if(trackid == -1){
         get_track = track;
@@ -56,26 +30,31 @@ function placeLineTarget(trackid,batch,type,type_id){
         var start_point = get_track.drama[0].flightPath.getPath().getAt(0);
         var offset = batch/2;
         for(var i=0;i<batch;i++){
-            plane = new addObject(-1);
+            plane = new Object();
             plane.id = GenerateId();
             plane.type = type;
             plane.type_id = type_id;
-            plane.object = new google.maps.Marker({
+            plane.delay = delay;
+            plane.property = 'target';
+
+            var marker = new google.maps.Marker({
                 position: new google.maps.LatLng(start_point.lat()+offset--,start_point.lng()),
                 icon:"images/plane_90.png",
                 map:map
             });
+            plane.object = marker;
             objectArray.push(plane);
             targetArray.push(plane);
+
+            addTargetClickListener(plane);
         }
         get_track.batch_count = batch;
         get_track.targetArray = targetArray;
     }
 
-}
+};
 
-function updateObject(id, type_id, x, y, acc, speed, angle){
-//    deleteObject(id);
+var updateObject = function(id, type_id, x, y, acc, speed, angle){
     var index = getObject(id);
     if(index!=-1){
         var obj = objectArray[index];
@@ -101,26 +80,43 @@ function updateObject(id, type_id, x, y, acc, speed, angle){
 
         obj.object.setPosition(pos);
         obj.object.setIcon(image);
-        //objectArray.splice(index,1,obj);
         
-    }else{
-		plane = new addObject(id);
-	}
-}
-
-function deleteObject(id){
-    var index = getObject(id);
-    if(index!=-1){
-        var obj = objectArray[index];
-        obj.object.setMap(null);
-        objectArray.splice(index,1);
     }
-}
-function clearObject(){
-    for(i in objectArray){
+};
+
+var deleteObject = function(id){
+    if(track){
+        var targetArray = track.targetArray;
+        for(var j=0,len2=targetArray.length;j<len2;j++){
+            if(id == targetArray[j].id){
+                var obj = targetArray[j].object;
+                obj.setMap(null);                
+                track.targetArray.splice(j,1);
+                return;
+            }
+        }
+    }
+    for(var i=0,len1=dramaArray.length;i<len1;i++){
+        var track = dramaArray[i];
+        if(track){
+            var targetArray = track.targetArray;
+            for(var j=0,len2=targetArray.length;j<len2;j++){
+                if(id == targetArray[j].id){
+                    var obj = targetArray[j].object;
+                    obj.setMap(null);                
+                    dramaArray[i].targetArray.splice(j,1);
+                    return;
+                }
+            }
+        }
+    }   
+};
+
+var clearObject = function(){
+    var m = objectArray.length;
+    for(var i = 0;i<m;i++){
         var obj = objectArray[i];
         obj.object.setMap(null);
-
     }
-    objectArray.splice(0,objectArray.length);
-}
+    objectArray.splice(0,m);
+};
